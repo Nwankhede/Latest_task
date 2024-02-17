@@ -23,7 +23,13 @@ object data_etl {
         val productDF = readData(spark, "src/main/resources/product_data.csv", productSchema)
         logger.debug("Product data read successfully")
 
+
         val joinedDF = salesDF.join(productDF, Seq("Product_ID"), "inner")
+        joinedDF.show()
+
+        val deDup = joinedDF.dropDuplicates()
+
+        deDup.show()
 
         // Caching to store the joined dataframe in-memory for better performance
         joinedDF.cache()
