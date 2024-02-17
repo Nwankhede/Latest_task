@@ -19,7 +19,13 @@ object data_etl {
         val salesDF = readData(spark, "src/main/resources/sales_data.csv", salesSchema)
         val productDF = readData(spark, "src/main/resources/product_data.csv", productSchema)
 
+
         val joinedDF = salesDF.join(productDF, Seq("Product_ID"), "inner")
+        joinedDF.show()
+
+        val deDup = joinedDF.dropDuplicates()
+
+        deDup.show()
 
         val productSalesDF = joinedDF
           .withColumn("Total_Sales_Amount", col("Quantity") * col("Price"))
