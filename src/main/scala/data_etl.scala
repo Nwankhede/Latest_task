@@ -17,7 +17,6 @@ object data_etl {
         .getOrCreate()
 
       try {
-
         val salesDf = readData(spark, "src/main/resources/sales_data.csv", salesSchema)
         if (salesDf._1.isDefined) {
           return logger.debug(Some(salesDf._1))
