@@ -32,7 +32,6 @@ object data_etl {
         logger.debug("Product data read successfully")
 
         val joinedDF = salesDF.join(productDF, Seq("Product_ID"), "inner")
-
         // Caching to store the joined dataframe in-memory for better performance
         joinedDF.cache()
         logger.debug("Caching the data..")
