@@ -18,9 +18,18 @@ object data_etl {
 
       try {
 
-        val salesDF = readData(spark, "src/main/resources/sales_data.csv", salesSchema)
+        val salesDf = readData(spark, "src/main/resources/sales_data.csv", salesSchema)
+        if (salesDf._1.isDefined) {
+          return logger.debug(Some(salesDf._1))
+        }
+        val salesDF = salesDf._2.get
         logger.debug("Sales data read successfully")
-        val productDF = readData(spark, "src/main/resources/product_data.csv", productSchema)
+        val productDf = readData(spark, "src/main/resources/product_data.csv", productSchema)
+        if (productDf._1.isDefined) {
+          return logger.debug(Some(productDf._1))
+        }
+        val productDF = salesDf._2.get
+
         logger.debug("Product data read successfully")
 
         val joinedDF = salesDF.join(productDF, Seq("Product_ID"), "inner")
@@ -93,24 +102,29 @@ object data_etl {
       }
     }
 
-    def readData(spark: SparkSession, filePath: String, schema: StructType): DataFrame = {
-      val df = spark.read
-        .option("header", "true")
-        .schema(schema)
-        .csv(filePath)
+    def readData(spark: SparkSession, filePath: String, schema: StructType): (Option[String],Option[DataFrame]) = {
+      val directory = new File(filePath)
+      if (directory.exists()){
+        val df = spark.read
+          .option("header", "true")
+          .schema(schema)
+          .csv(filePath)
 
-      val columnsWithNull = schema.filter(field => df.filter(col(field.name).isNull).count() > 0).map(_.name)
-      if (columnsWithNull.nonEmpty) {
-        throw new IllegalArgumentException(s"Null values found in columns: ${columnsWithNull.mkString(", ")}")
-      }
-
-      schema.fields.foreach { field =>
-        if (df.schema(field.name).dataType != field.dataType) {
-          throw new IllegalArgumentException(s"Invalid data type for column '${field.name}'. Expected: ${field.dataType}, Actual: ${df.schema(field.name).dataType}")
+        val columnsWithNull = schema.filter(field => df.filter(col(field.name).isNull).count() > 0).map(_.name)
+        if (columnsWithNull.nonEmpty) {
+          throw new IllegalArgumentException(s"Null values found in columns: ${columnsWithNull.mkString(", ")}")
         }
-      }
 
-      df
+        schema.fields.foreach { field =>
+          if (df.schema(field.name).dataType != field.dataType) {
+            throw new IllegalArgumentException(s"Invalid data type for column '${field.name}'. Expected: ${field.dataType}, Actual: ${df.schema(field.name).dataType}")
+          }
+        }
+        (None,Some(df))
+      }
+      else {
+        (Some(s"File doesn't exist: $filePath"), None)
+      }
     }
 
 
